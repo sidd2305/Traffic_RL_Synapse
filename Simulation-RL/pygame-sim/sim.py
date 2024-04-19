@@ -82,7 +82,7 @@ mid = {'right': {'x':705, 'y':445}, 'down': {'x':695, 'y':450}, 'left': {'x':695
 rotationAngle = 3
 
 # Gap between vehicles
-gap = 15    # stopping gap
+gap = 20    # stopping gap
 gap2 = 15   # moving gap
 
 pygame.init()
@@ -281,46 +281,53 @@ def setTime():
     global noOfCars, noOfBikes, noOfBuses, noOfTrucks, noOfRickshaws, noOfLanes
     global carTime, busTime, truckTime, rickshawTime, bikeTime
     os.system("say detecting vehicles, "+directionNumbers[(currentGreen+1)%noOfSignals])
-#    detection_result=detection(currentGreen,tfnet)
-#    greenTime = math.ceil(((noOfCars*carTime) + (noOfRickshaws*rickshawTime) + (noOfBuses*busTime) + (noOfBikes*bikeTime))/(noOfLanes+1))
-#    if(greenTime<defaultMinimum):
-#       greenTime = defaultMinimum
-#    elif(greenTime>defaultMaximum):
-#       greenTime = defaultMaximum
-    # greenTime = len(vehicles[currentGreen][0])+len(vehicles[currentGreen][1])+len(vehicles[currentGreen][2])
-    # noOfVehicles = len(vehicles[directionNumbers[nextGreen]][1])+len(vehicles[directionNumbers[nextGreen]][2])-vehicles[directionNumbers[nextGreen]]['crossed']
-    # print("no. of vehicles = ",noOfVehicles)
-    noOfCars, noOfBuses, noOfTrucks, noOfRickshaws, noOfBikes = 0,0,0,0,0
-    for j in range(len(vehicles[directionNumbers[nextGreen]][0])):
-        vehicle = vehicles[directionNumbers[nextGreen]][0][j]
-        if(vehicle.crossed==0):
-            vclass = vehicle.vehicleClass
-            # print(vclass)
-            noOfBikes += 1
-    for i in range(1,3):
-        for j in range(len(vehicles[directionNumbers[nextGreen]][i])):
-            vehicle = vehicles[directionNumbers[nextGreen]][i][j]
-            if(vehicle.crossed==0):
-                vclass = vehicle.vehicleClass
-                # print(vclass)
-                if(vclass=='car'):
+
+    noOfCars, noOfBikes, noOfBuses, noOfTrucks, noOfRickshaws, noOfLanes = 0, 0, 0, 0, 0, 0
+
+    # Flag to check if truck is detected
+    truckDetected = False
+
+    # Count vehicles and detect trucks
+    for i in range(noOfSignals):
+        for j in range(noOfLanes):
+            for vehicle in vehicles[directionNumbers[i]][j]:
+                if vehicle.vehicleClass == 'truck':
+                    # If a truck is detected, set the flag and break the loop
+                    truckDetected = True
+                    break
+
+                # Count other vehicle types
+                if vehicle.vehicleClass == 'car':
                     noOfCars += 1
-                elif(vclass=='bus'):
+                elif vehicle.vehicleClass == 'bus':
                     noOfBuses += 1
-                elif(vclass=='truck'):
-                    noOfTrucks += 1
-                elif(vclass=='rickshaw'):
+                elif vehicle.vehicleClass == 'rickshaw':
                     noOfRickshaws += 1
-    # print(noOfCars)
-    greenTime = math.ceil(((noOfCars*carTime) + (noOfRickshaws*rickshawTime) + (noOfBuses*busTime) + (noOfTrucks*truckTime)+ (noOfBikes*bikeTime))/(noOfLanes+1))
-    # greenTime = math.ceil((noOfVehicles)/noOfLanes) 
-    print('Green Time: ',greenTime)
-    if(greenTime<defaultMinimum):
+                elif vehicle.vehicleClass == 'bike':
+                    noOfBikes += 1
+        
+        if truckDetected:
+            break
+
+    # If a truck is detected, set the current signal to green and make all other signals red
+    if truckDetected:
+        for i in range(noOfSignals):
+            if i == currentGreen:
+                signals[i].red = 0
+            else:
+                signals[i].red = defaultRed
+                signals[i].green = 0
+        return
+
+    # Calculate green time based on other vehicle counts
+    greenTime = math.ceil(((noOfCars * carTime) + (noOfRickshaws * rickshawTime) + (noOfBuses * busTime) + (noOfBikes * bikeTime)) / (noOfLanes + 1))
+    if greenTime < defaultMinimum:
         greenTime = defaultMinimum
-    elif(greenTime>defaultMaximum):
+    elif greenTime > defaultMaximum:
         greenTime = defaultMaximum
-    # greenTime = random.randint(15,50)
-    signals[(currentGreen+1)%(noOfSignals)].green = greenTime
+
+    # Update green time for the next signal
+    signals[(currentGreen + 1) % noOfSignals].green = greenTime
    
 def repeat():
     global currentGreen, currentYellow, nextGreen
@@ -406,6 +413,14 @@ def generateVehicles():
             direction_number = 2
         elif(temp<a[3]):
             direction_number = 3
+       
+        
+        if(vehicle_type==2):
+            g=random.randint(0,1000)
+            if(g<300):
+                vehicle_type=2
+            else:
+                vehicle_type=0
         Vehicle(lane_number, vehicleTypes[vehicle_type], direction_number, directionNumbers[direction_number], will_turn)
         time.sleep(0.75)
 
