@@ -32,7 +32,7 @@ defaultMaximum = 60
 
 signals = []
 noOfSignals = 4
-simTime = 300       # change this to change time of simulation
+simTime = 60      # change this to change time of simulation
 timeElapsed = 0
 
 currentGreen = 0   # Indicates which signal is green
@@ -284,17 +284,20 @@ def setTime():
 
     noOfCars, noOfBikes, noOfBuses, noOfTrucks, noOfRickshaws, noOfLanes = 0, 0, 0, 0, 0, 0
 
-    # Flag to check if truck is detected
-    truckDetected = False
-
     # Count vehicles and detect trucks
     for i in range(noOfSignals):
         for j in range(noOfLanes):
             for vehicle in vehicles[directionNumbers[i]][j]:
                 if vehicle.vehicleClass == 'truck':
-                    # If a truck is detected, set the flag and break the loop
-                    truckDetected = True
-                    break
+                    # If a truck is detected, set the signal with the truck to green and all other signals to red
+                    currentGreen = i
+                    for k in range(noOfSignals):
+                        if k == currentGreen:
+                            signals[k].red = 0
+                        else:
+                            signals[k].red = defaultRed
+                            signals[k].green = 0
+                    return
 
                 # Count other vehicle types
                 if vehicle.vehicleClass == 'car':
@@ -306,19 +309,6 @@ def setTime():
                 elif vehicle.vehicleClass == 'bike':
                     noOfBikes += 1
         
-        if truckDetected:
-            break
-
-    # If a truck is detected, set the current signal to green and make all other signals red
-    if truckDetected:
-        for i in range(noOfSignals):
-            if i == currentGreen:
-                signals[i].red = 0
-            else:
-                signals[i].red = defaultRed
-                signals[i].green = 0
-        return
-
     # Calculate green time based on other vehicle counts
     greenTime = math.ceil(((noOfCars * carTime) + (noOfRickshaws * rickshawTime) + (noOfBuses * busTime) + (noOfBikes * bikeTime)) / (noOfLanes + 1))
     if greenTime < defaultMinimum:
@@ -331,37 +321,51 @@ def setTime():
    
 def repeat():
     global currentGreen, currentYellow, nextGreen
-    while(signals[currentGreen].green>0):   # while the timer of current green signal is not zero
-        printStatus()
-        updateValues()
-        if(signals[(currentGreen+1)%(noOfSignals)].red==detectionTime):    # set time of next green signal 
-            thread = threading.Thread(name="detection",target=setTime, args=())
-            thread.daemon = True
-            thread.start()
-            # setTime()
-        time.sleep(1)
-    currentYellow = 1   # set yellow signal on
+
+    # Check if any lane has a truck
+    for i in range(noOfSignals):
+        for vehicle in vehicles[directionNumbers[i]]['crossed']:
+            if vehicle.vehicleClass == 'truck':
+                currentGreen = i
+                nextGreen = (currentGreen + 1) % noOfSignals
+                for j in range(noOfSignals):
+                    if j == currentGreen:
+                        signals[j].red = 0
+                    else:
+                        signals[j].red = defaultRed
+                        signals[j].green = 0
+                return
+
+    # If no truck is detected, proceed with the cyclic logic
+    nextGreen = (currentGreen + 1) % noOfSignals
+    signals[nextGreen].red = signals[currentGreen].yellow + signals[currentGreen].green
+    
+    # Proceed with yellow and red signals as before
+    currentYellow = 1
     vehicleCountTexts[currentGreen] = "0"
-    # reset stop coordinates of lanes and vehicles 
-    for i in range(0,3):
+    for i in range(0, 3):
         stops[directionNumbers[currentGreen]][i] = defaultStop[directionNumbers[currentGreen]]
         for vehicle in vehicles[directionNumbers[currentGreen]][i]:
             vehicle.stop = defaultStop[directionNumbers[currentGreen]]
-    while(signals[currentGreen].yellow>0):  # while the timer of current yellow signal is not zero
+
+    # Yellow signal
+    while signals[currentGreen].yellow > 0:
         printStatus()
         updateValues()
         time.sleep(1)
-    currentYellow = 0   # set yellow signal off
-    
-    # reset all signal times of current signal to default times
+    currentYellow = 0
+
+    # Reset signal times to default
     signals[currentGreen].green = defaultGreen
     signals[currentGreen].yellow = defaultYellow
     signals[currentGreen].red = defaultRed
-       
-    currentGreen = nextGreen # set next signal as green signal
-    nextGreen = (currentGreen+1)%noOfSignals    # set next green signal
-    signals[nextGreen].red = signals[currentGreen].yellow+signals[currentGreen].green    # set the red time of next to next signal as (yellow time + green time) of next signal
-    repeat()     
+
+    # Set the next signal to green
+    currentGreen = nextGreen
+    signals[nextGreen].red = signals[currentGreen].yellow + signals[currentGreen].green
+    
+    # Repeat the process
+    repeat()
 
 # Print the signal timers on cmd
 def printStatus():                                                                                           
