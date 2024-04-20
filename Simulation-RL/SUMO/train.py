@@ -119,7 +119,7 @@ class Agent:
                 ),
                 "reward_memory":np.zeros(self.max_mem, dtype=np.float32),
                 "action_memory": np.zeros(self.max_mem, dtype=np.int32),
-                "terminal_memory": np.zeros(self.max_mem, dtype=np.bool),
+                "terminal_memory": np.zeros(self.max_mem, dtype=bool),
                 "mem_cntr": 0,
                 "iter_cntr": 0,
             }
