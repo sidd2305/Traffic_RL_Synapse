@@ -64,18 +64,7 @@ https://user-images.githubusercontent.com/44360315/113673665-e8edd300-96d6-11eb-
 
 
 
-## Arduino connection.
 
-We have connected our simulation with Arduino.<br/>
-
-### Arduino1
-<img src="arduino_images/arduino1.jpg" width="600" height="400"/>
-
-### Arduino2
-<img src="arduino_images/arduino2.jpg" width="600" height="400"/>
-
-### Arduino3
-<img src="arduino_images/arduino3.jpg" width="600" height="400"/>
 
 ## How to train new Networks.
 
@@ -132,10 +121,6 @@ You can use train.py to run a pre-trained model on GUI.
 This will open GUI which you can run to see how your model performs.
 To get accurate results set a value of -s the same for testing and training.
 
-### Extra: Running Ardunio
-Currently, Arduino works only for a single crossroad.<br/>
-More than one cross road will return an error.<br/>
 
-For running Arduino for testing use --ard.
 
 `python train.py -m model_name -s 500 --ard`
